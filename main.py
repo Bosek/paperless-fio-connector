@@ -1,9 +1,11 @@
 import argparse
 import json
 import sys
+from datetime import datetime
 from operator import itemgetter
 from os import getenv
 
+from fio import get as fio_get
 from fio import get_transactions as fio_get_transactions
 from fio import test_connection as fio_test
 from paperless import get as paperless_get
@@ -19,6 +21,24 @@ fio_sub_parser = fio_parser.add_subparsers()
 
 fio_test_parser = fio_sub_parser.add_parser("test", help="Test connection to API and token.")
 fio_test_parser.set_defaults(func=lambda _: print("Fio API connection OK." if fio_test() else "Fio API connection NOT OK."))
+
+def fio_set_last(args):
+    if "date" not in args:
+        print("No date provided.")
+        return False
+    date = datetime.strptime(args.date, "%Y-%m-%d")
+    date_formatted = date.strftime('%Y-%m-%d')
+    req = fio_get(f"periods/<token>/{date_formatted}/{date.strftime('%Y-%m-%d')}/transactions.json")
+    if req.status_code < 400:
+        print(f"Last date set to {date_formatted}")
+    else:
+        print(f"Could not set the last date to {date_formatted}")
+    return 
+    
+
+fio_set_last_parser = fio_sub_parser.add_parser("set-last", help="Set last pull date")
+fio_set_last_parser.add_argument("date", metavar="<YYYY-MM-DD>", type=str, help="Date in YYYY-MM-DD format")
+fio_set_last_parser.set_defaults(func= lambda args: fio_set_last(args))
 
 
 paperless_parser = sub_parser.add_parser("paperless", help="Paperless API related commands.")
