@@ -151,7 +151,6 @@ def link(args):
                 print(f"Match tags after update: {tags}")
 
                 if "perform" in args and args.perform is True:
-                    breakpoint()
                     patch = paperless_patch(f"/documents/{result['id']}/", { "tags": tags })
                     if patch:
                         print(f"Document ID {result['id']} updated.")
