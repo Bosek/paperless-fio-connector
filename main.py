@@ -40,9 +40,6 @@ link_parser = sub_parser.add_parser("link", help="Link transactions with documen
 link_parser.add_argument("-p", "--perform", action="store_true", help="Perform update requests on Paperless.")
 link_parser.set_defaults(func=lambda args: link(args))
 
-#sys.argv.append("fio")
-sys.argv.append("link")
-
 if len(sys.argv) <= 1:
     main_parser.print_help()
 
