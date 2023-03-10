@@ -69,7 +69,7 @@ def link(args):
     
     print("Linking Fio payments with Paperless documents...")
     transactions, last_id = fio_get_transactions()
-    if transactions is None:
+    if transactions is None or len(transactions) == 0:
         print("No payment found.")
         return
     for transaction in transactions:
