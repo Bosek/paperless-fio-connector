@@ -23,21 +23,30 @@ fio_test_parser = fio_sub_parser.add_parser("test", help="Test connection to API
 fio_test_parser.set_defaults(func=lambda _: print("Fio API connection OK." if fio_test() else "Fio API connection NOT OK."))
 
 def fio_set_last(args):
-    if "date" not in args:
-        print("No date provided.")
-        return False
-    date = datetime.strptime(args.date, "%Y-%m-%d")
-    date_formatted = date.strftime('%Y-%m-%d')
-    req = fio_get(f"periods/<token>/{date_formatted}/{date.strftime('%Y-%m-%d')}/transactions.json")
+    date_format = "%Y-%m-%d"
+    date_start = datetime.strptime(args.date_start, date_format)
+    date_start_formatted = date_start.strftime(date_format)
+    date_end = datetime.strptime(args.date_end, date_format)
+    date_end_formatted = date_end.strftime(date_format)
+
+    transactions = fio_get_transactions(f"periods/<token>/{date_start_formatted}/{date_end_formatted}/transactions.json")
+    if transactions is None or len(transactions[0]) == 0:
+        print("Could not set last date(first step).")
+        return
+    
+    transaction = transactions[0][-1]
+    req = fio_get(f"set-last-id/<token>/{transaction.ID}/")
     if req.status_code < 400:
-        print(f"Last date set to {date_formatted}")
+        print(f"Last date set to transaction ID {transaction.ID} from {transaction.get_date().strftime(date_format)}")
     else:
-        print(f"Could not set the last date to {date_formatted}")
+        print("Could not set last date(second step).")
+    
     return 
     
 
 fio_set_last_parser = fio_sub_parser.add_parser("set-last", help="Set last pull date")
-fio_set_last_parser.add_argument("date", metavar="<YYYY-MM-DD>", type=str, help="Date in YYYY-MM-DD format")
+fio_set_last_parser.add_argument("date_start", metavar="<YYYY-MM-DD>", type=str, help="Start date in YYYY-MM-DD format")
+fio_set_last_parser.add_argument("date_end", metavar="<YYYY-MM-DD>", type=str, help="End date in YYYY-MM-DD format")
 fio_set_last_parser.set_defaults(func= lambda args: fio_set_last(args))
 
 
@@ -68,9 +77,6 @@ paperless_types_parser = paperless_sub_parser.add_parser("types", help="Get Pape
 paperless_types_parser.set_defaults(func=lambda _: paperless_get_types())
 
 def paperless_search_query(args):
-    if "query" not in args:
-        print("No query string provided.")
-        return
     query = args.query
     print(f"Searching for: \"{query}\"")
     count, results = itemgetter("count", "results")(paperless_search(query))
@@ -94,12 +100,15 @@ def link(args):
     if (FINAL_TAG_ID := getenv("FINAL_TAG_ID")) is None:
         raise EnvironmentError("No FINAL_TAG_ID")
     
+    TARGET_TAG_ID = int(TARGET_TAG_ID)
+    FINAL_TAG_ID = int(FINAL_TAG_ID)
+    
     print("Linking Fio payments with Paperless documents...")
     transactions = fio_get_transactions()
     if transactions is None:
         print("No payment found.")
         return
-    for transaction in transactions:
+    for transaction in transactions[0]:
         string = f"Payment {transaction.ID} from {transaction.get_date().strftime('%x %X')}"
         string = string + f", {transaction.Amount}{transaction.Currency}"
 
@@ -160,6 +169,14 @@ def link(args):
                 print("Too few results. Skipping...")
 
         print("")
+
+    if transactions[1] is not None and ("perform" not in args or args.perform is False):
+        print(f"Setting last ID to {transactions[1]}")
+        req = fio_get(f"set-last-id/<token>/{transactions[1]}/")
+        if req.status_code < 400:
+            print(f"Last ID set.")
+        else:
+            print("Could not set last ID.")
 
 link_parser = sub_parser.add_parser("link", help="Link transactions with documents.")
 link_parser.add_argument("-p", "--perform", action="store_true", help="Perform update requests on Paperless.")

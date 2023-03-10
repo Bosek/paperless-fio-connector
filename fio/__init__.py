@@ -1,3 +1,4 @@
+from email.policy import default
 import json
 import re
 from os import getenv
@@ -54,20 +55,23 @@ def test_connection() -> bool:
     req = get("/lastStatement/<token>/statement")
     return req.status_code == 200
     
-def get_transactions() -> List[Transaction] | None:
+def get_transactions(endpoint: str | None = None) -> tuple[List[Transaction], int | None] | None:
     transactions = []
-    req = get("/last/<token>/transactions.json")
+    default_endpoint = endpoint is None
+    if endpoint is None:
+        endpoint = "/last/<token>/transactions.json"
+    req = get(endpoint)
 
     if req.status_code >= 400:
         return None
     
     req_body = req.json()
     req_transactions = req_body["accountStatement"]["transactionList"]["transaction"]
-    
+    req_last_id = req_body["accountStatement"]["info"]["idLastDownload"]
     for req_transaction in req_transactions:
-        if get_transaction_value(req_transaction, "Amount") > 0:
+        if default_endpoint and get_transaction_value(req_transaction, "Amount") > 0:
             continue
-        if get_transaction_value(req_transaction, "Type") == "Platba kartou":
+        if default_endpoint and get_transaction_value(req_transaction, "Type") == "Platba kartou":
             continue
         
         transactions.append(Transaction(
@@ -81,7 +85,7 @@ def get_transactions() -> List[Transaction] | None:
                 get_transaction_value(req_transaction, "VS"),
                 get_transaction_value(req_transaction, "Specification"),
             ))
-    return transactions
+    return transactions, req_last_id
         
 def load_transactions(f: TextIO) -> List[Transaction]:
     return [Transaction(*transaction) for transaction in json.load(f)]
