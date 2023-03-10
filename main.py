@@ -171,6 +171,7 @@ def link(args):
         print("")
 
     if transactions[1] is not None and ("perform" not in args or args.perform is False):
+        print("--perform not set, resetting last ID.")
         print(f"Setting last ID to {transactions[1]}")
         req = fio_get(f"set-last-id/<token>/{transactions[1]}/")
         if req.status_code < 400:
