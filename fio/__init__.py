@@ -55,7 +55,7 @@ def test_connection() -> bool:
     req = get("/lastStatement/<token>/statement")
     return req.status_code == 200
     
-def get_transactions(endpoint: str | None = None) -> tuple[List[Transaction], int | None] | None:
+def get_transactions(endpoint: str | None = None) -> tuple[List[Transaction] | None, int | None]:
     transactions = []
     default_endpoint = endpoint is None
     if endpoint is None:
@@ -63,7 +63,7 @@ def get_transactions(endpoint: str | None = None) -> tuple[List[Transaction], in
     req = get(endpoint)
 
     if req.status_code >= 400:
-        return None
+        return None, None
     
     req_body = req.json()
     req_transactions = req_body["accountStatement"]["transactionList"]["transaction"]
