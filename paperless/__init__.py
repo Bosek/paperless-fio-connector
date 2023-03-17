@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from os import getenv
-from typing import Any
+from typing import Any, Tuple
 
 import requests
 
@@ -19,16 +19,20 @@ def prep_endpoint(endpoint: str | None) -> str:
         endpoint = "/" + endpoint
     return endpoint
 
-def get(endpoint: str | None = None, params: dict | None = None) -> dict | None:
-    if (PAPERLESS_URL := getenv("PAPERLESS_URL")) is None:
+def get_url_and_token() -> Tuple[str, str]:
+    if (url := getenv("PAPERLESS_URL")) is None:
         raise EnvironmentError("No PAPERLESS_URL")
-    if not PAPERLESS_URL.endswith("/"):
-        PAPERLESS_URL = PAPERLESS_URL + "/"
+    if not url.endswith("/"):
+        url = url + "/"
 
-    if (PAPERLESS_TOKEN := getenv("PAPERLESS_TOKEN")) is None:
+    if (token := getenv("PAPERLESS_TOKEN")) is None:
         raise EnvironmentError("No PAPERLESS_TOKEN")
-    else:
-        HEADER["Authorization"] = HEADER["Authorization"].replace("<token>", PAPERLESS_TOKEN)
+    
+    return (url, token)
+
+def get(endpoint: str | None = None, params: dict | None = None) -> dict | None:
+    PAPERLESS_URL, PAPERLESS_TOKEN = get_url_and_token()
+    HEADER["Authorization"] = HEADER["Authorization"].replace("<token>", PAPERLESS_TOKEN)
 
     req = requests.get(f"{PAPERLESS_URL}api{prep_endpoint(endpoint)}", params=params, headers=HEADER)
     if getenv("DEBUG") is not None:
@@ -38,16 +42,18 @@ def get(endpoint: str | None = None, params: dict | None = None) -> dict | None:
     else:
         return req.json()
     
-def patch(endpoint: str, data: dict) -> bool:
-    if (PAPERLESS_URL := getenv("PAPERLESS_URL")) is None:
-        raise EnvironmentError("No PAPERLESS_URL")
-    if not PAPERLESS_URL.endswith("/"):
-        PAPERLESS_URL = PAPERLESS_URL + "/"
+def post(endpoint: str, data: dict) -> bool:
+    PAPERLESS_URL, PAPERLESS_TOKEN = get_url_and_token()
+    HEADER["Authorization"] = HEADER["Authorization"].replace("<token>", PAPERLESS_TOKEN)
 
-    if (PAPERLESS_TOKEN := getenv("PAPERLESS_TOKEN")) is None:
-        raise EnvironmentError("No PAPERLESS_TOKEN")
-    else:
-        HEADER["Authorization"] = HEADER["Authorization"].replace("<token>", PAPERLESS_TOKEN)
+    req = requests.post(f"{PAPERLESS_URL}api{prep_endpoint(endpoint)}", json.dumps(data), headers=HEADER)
+    if getenv("DEBUG") is not None:
+        print(f"{req.request.method} {req.url}")
+    return req.status_code < 400
+    
+def patch(endpoint: str, data: dict) -> bool:
+    PAPERLESS_URL, PAPERLESS_TOKEN = get_url_and_token()
+    HEADER["Authorization"] = HEADER["Authorization"].replace("<token>", PAPERLESS_TOKEN)
 
     req = requests.patch(f"{PAPERLESS_URL}api{prep_endpoint(endpoint)}", json.dumps(data), headers=HEADER)
     if getenv("DEBUG") is not None:

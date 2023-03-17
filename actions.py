@@ -7,6 +7,7 @@ from fio import get as fio_get
 from fio import get_transactions as fio_get_transactions
 from paperless import get as paperless_get
 from paperless import patch as paperless_patch
+from paperless import post as paperless_post
 from paperless import search as paperless_search
 
 
@@ -55,10 +56,8 @@ def paperless_search_query(args):
         print(json.dumps(results, indent=2))
 
 def link(args):
-    if (TARGET_TYPE_SLUG := getenv("TARGET_TYPE_SLUG")) is None:
-        raise EnvironmentError("No TARGET_TYPE_SLUG")
-    if (TARGET_TAG_SLUG := getenv("TARGET_TAG_SLUG")) is None:
-        raise EnvironmentError("No TARGET_TAG_SLUG")
+    if (DOCUMENTS_FILTER := getenv("DOCUMENTS_FILER")) is None:
+        raise EnvironmentError("No DOCUMENTS_FILTER")
     if (TARGET_TAG_ID := getenv("TARGET_TAG_ID")) is None:
         raise EnvironmentError("No TARGET_TAG_ID")
     if (FINAL_TAG_ID := getenv("FINAL_TAG_ID")) is None:
@@ -74,20 +73,26 @@ def link(args):
         return
     for transaction in transactions:
         string = f"Payment {transaction.ID} from {transaction.get_date().strftime('%x %X')}"
+        comment = f"{transaction.get_date().strftime('%x %X')}, {transaction.ID}, {transaction.Account}"
+
         string = string + f", {transaction.Amount}{transaction.Currency}"
+        comment = comment + f", {transaction.Account}{transaction.Currency}"
 
         foreign_amount = transaction.get_foreign_amount()
         if foreign_amount is not None:
-            string = string + f" ({foreign_amount.amount_text}{foreign_amount.currency})"
+            string = string + f"| ({foreign_amount.amount_text}{foreign_amount.currency})"
+            comment = comment + f"| ({foreign_amount.amount_text}{foreign_amount.currency})"
         
         if transaction.Message:
             string = string + f", {transaction.Message}"
+            comment = comment + f", {transaction.Message}"
         
         if transaction.VS:
             string = string + f", {transaction.VS}"
+            comment = comment + f", {transaction.VS}"
         print(string)
 
-        query = f"type:{TARGET_TYPE_SLUG} tag:{TARGET_TAG_SLUG} <param>"
+        query = f"{DOCUMENTS_FILTER.strip()} <param>"
         params = []
         if transaction.Message is not None and " " not in transaction.Message:
             params.append(f"'{transaction.Message}'")
@@ -116,8 +121,11 @@ def link(args):
 
                 if "perform" in args and args.perform is True:
                     patch = paperless_patch(f"/documents/{result['id']}/", { "tags": tags })
+
                     if patch:
+                        comment = paperless_post(f"/documents/{result['id']}/comments/", { "comment": comment })
                         print(f"Document ID {result['id']} updated.")
+                        print("Comment was added." if comment else "Comment was NOT added.")
                     else:
                         print(f"Document ID {result['id']} NOT updated.")
                 else:
