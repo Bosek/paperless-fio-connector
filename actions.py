@@ -56,7 +56,7 @@ def paperless_search_query(args):
         print(json.dumps(results, indent=2))
 
 def link(args):
-    if (DOCUMENTS_FILTER := getenv("DOCUMENTS_FILER")) is None:
+    if (DOCUMENTS_FILTER := getenv("DOCUMENTS_FILTER")) is None:
         raise EnvironmentError("No DOCUMENTS_FILTER")
     if (TARGET_TAG_ID := getenv("TARGET_TAG_ID")) is None:
         raise EnvironmentError("No TARGET_TAG_ID")
