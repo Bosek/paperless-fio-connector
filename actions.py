@@ -75,13 +75,16 @@ def link(args):
         string = f"Payment {transaction.ID} from {transaction.get_date().strftime('%Y-%m-%d')}"
         comment = f"{transaction.get_date().strftime('%Y-%m-%d')}, ID{transaction.ID}, {transaction.Account}"
 
-        string = string + f", {transaction.Amount}{transaction.Currency}"
-        comment = comment + f", {transaction.Amount}{transaction.Currency}"
+        string = string + f", {abs(transaction.Amount)}{transaction.Currency}"
+        comment = comment + f", {abs(transaction.Amount)}{transaction.Currency}"
 
         foreign_amount = transaction.get_foreign_amount()
         if foreign_amount is not None:
             string = string + f" ({foreign_amount.amount_text}{foreign_amount.currency})"
             comment = comment + f" | {foreign_amount.amount_text}{foreign_amount.currency}"
+            if (foreign_amount_float := foreign_amount.amount_float) is not None:
+                comment = comment + f" ({(abs(float(transaction.Amount))/foreign_amount_float):.2f}"
+                comment = comment + f"{transaction.Currency}/{foreign_amount.currency})"
         
         if transaction.Message:
             string = string + f", {transaction.Message}"
