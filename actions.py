@@ -72,8 +72,8 @@ def link(args):
         print("No payment found.")
         return
     for transaction in transactions:
-        string = f"Payment {transaction.ID} from {transaction.get_date().strftime('%x %X')}"
-        comment = f"{transaction.get_date().strftime('%x %X')}, ID{transaction.ID}, {transaction.Account}"
+        string = f"Payment {transaction.ID} from {transaction.get_date().strftime('%x')}"
+        comment = f"{transaction.get_date().strftime('%x')}, ID{transaction.ID}, {transaction.Account}"
 
         string = string + f", {transaction.Amount}{transaction.Currency}"
         comment = comment + f", {transaction.Amount}{transaction.Currency}"
