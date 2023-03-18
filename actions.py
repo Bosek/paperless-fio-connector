@@ -72,16 +72,16 @@ def link(args):
         print("No payment found.")
         return
     for transaction in transactions:
-        string = f"Payment {transaction.ID} from {transaction.get_date().strftime('%x')}"
-        comment = f"{transaction.get_date().strftime('%x')}, ID{transaction.ID}, {transaction.Account}"
+        string = f"Payment {transaction.ID} from {transaction.get_date().strftime('%Y-%m-%d')}"
+        comment = f"{transaction.get_date().strftime('%Y-%m-%d')}, ID{transaction.ID}, {transaction.Account}"
 
         string = string + f", {transaction.Amount}{transaction.Currency}"
         comment = comment + f", {transaction.Amount}{transaction.Currency}"
 
         foreign_amount = transaction.get_foreign_amount()
         if foreign_amount is not None:
-            string = string + f" | ({foreign_amount.amount_text}{foreign_amount.currency})"
-            comment = comment + f" | ({foreign_amount.amount_text}{foreign_amount.currency})"
+            string = string + f" ({foreign_amount.amount_text}{foreign_amount.currency})"
+            comment = comment + f" | {foreign_amount.amount_text}{foreign_amount.currency}"
         
         if transaction.Message:
             string = string + f", {transaction.Message}"
